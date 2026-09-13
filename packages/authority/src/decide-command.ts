@@ -15,6 +15,7 @@ import {
   inferEffectsFromAction,
   type EffectDescriptor,
 } from './effect-authority.js';
+import type { SwarmEnvelope } from './swarm-authority.js';
 
 export type AuthorityDecisionStatus = 'GRANTED' | 'DENIED' | 'ESCALATION_REQUIRED';
 
@@ -37,7 +38,9 @@ export type AuthorityDecisionCode =
   | 'UNAUTHORIZED_EGRESS'
   | 'COVERT_CHANNEL_DETECTED'
   | 'IMMUTABLE_GOVERNOR_VIOLATION'
-  | 'SWARM_AMPLIFICATION_DENIED';
+  | 'SWARM_AMPLIFICATION_DENIED'
+  | 'UNTRUSTED_EVALUATOR'
+  | 'MEDIATION_BYPASS';
 
 export interface DecideCommandActor {
   id: string;
@@ -76,6 +79,16 @@ export interface AuthorityLookup {
   } | undefined;
 }
 
+export interface DecideCommandSwarm {
+  envelope: SwarmEnvelope;
+  budgetMetric?: string;
+  register?: {
+    sessionId: string;
+    parentSessionId?: string;
+    authorizedCommands: readonly string[];
+  };
+}
+
 export interface DecideCommandInput {
   contract: AppContract;
   actor: DecideCommandActor;
@@ -85,6 +98,7 @@ export interface DecideCommandInput {
   evidence?: DecideCommandEvidence;
   graph?: AuthorityLookup;
   effects?: readonly EffectDescriptor[];
+  swarm?: DecideCommandSwarm;
 }
 
 export interface AuthorityDecision {
@@ -641,9 +655,25 @@ function decideAgainstBinding(input: DecideCommandInput, args: Record<string, un
   if (actor.denied) return actor.denied;
   const lease = decideLease(input, actor);
   if (lease) return lease;
+
+  const inferredEffects = input.effects ?? inferEffectsFromAction(action, args);
   const applied = behaviorClauses(contract, action);
   const behavior = applied.find((clause) => clause.kind === 'behavior');
   if (!behavior) {
+    if (inferredEffects.length > 0) {
+      const effectEval = evaluateEffectPolicies(inferredEffects, [], {
+        allowLocked: evidence?.allowLocked,
+        boundProposalHash: evidence?.boundProposalHash,
+      });
+      if (!effectEval.allowed) {
+        return decision(
+          effectEval.status,
+          effectEval.code,
+          effectEval.reason ?? `DENIED ${effectEval.code}`,
+          [],
+        );
+      }
+    }
     return decision('DENIED', 'UNKNOWN_ACTION', `Unknown action "${action}".`, []);
   }
 
@@ -689,7 +719,6 @@ function decideAgainstBinding(input: DecideCommandInput, args: Record<string, un
     );
   }
 
-  const inferredEffects = input.effects ?? inferEffectsFromAction(action, args);
   if (inferredEffects.length > 0) {
     const effectEval = evaluateEffectPolicies(inferredEffects, [], {
       allowLocked: evidence?.allowLocked,
@@ -748,18 +777,54 @@ function decideAgainstBinding(input: DecideCommandInput, args: Record<string, un
   return granted(clauseIds);
 }
 
+function decideSwarmGate(input: DecideCommandInput, args: Record<string, unknown>): AuthorityDecision | undefined {
+  const swarm = input.swarm;
+  if (!swarm) return undefined;
+  if (swarm.register) {
+    const registered = swarm.envelope.registerAgentSession(swarm.register);
+    if (!registered.ok) {
+      return decision('DENIED', 'SWARM_AMPLIFICATION_DENIED', registered.reason);
+    }
+  }
+  if (!swarm.budgetMetric) return undefined;
+  const amount = asNumber(args.amount);
+  if (amount === undefined) return undefined;
+  const consumed = swarm.envelope.consumeBudget(swarm.budgetMetric, amount);
+  if (!consumed.ok) {
+    return decision('DENIED', 'SWARM_AMPLIFICATION_DENIED', consumed.reason);
+  }
+  return undefined;
+}
+
 export function decideCommand(input: DecideCommandInput): AuthorityDecision {
   const args = asRecord(input.args);
+  if (input.swarm?.register) {
+    const registered = input.swarm.envelope.registerAgentSession(input.swarm.register);
+    if (!registered.ok) {
+      return decision('DENIED', 'SWARM_AMPLIFICATION_DENIED', registered.reason);
+    }
+  }
   const primary = decideAgainstBinding(input, args);
   const prompted = input.evidence?.prompted;
-  if (!prompted) return primary;
-  const overlay = decideAgainstBinding(input, { ...args, ...asRecord(prompted) });
-  if (RANK[overlay.status] > RANK[primary.status]) {
-    return {
-      ...overlay,
-      code: overlay.status === 'DENIED' ? 'COERCED_INTENT' : overlay.code,
-      reason: `Prompted intent is more restrictive than tool args. ${overlay.reason}`,
-    };
+  let winner = primary;
+  if (prompted) {
+    const overlay = decideAgainstBinding(input, { ...args, ...asRecord(prompted) });
+    if (RANK[overlay.status] > RANK[primary.status]) {
+      winner = {
+        ...overlay,
+        code: overlay.status === 'DENIED' ? 'COERCED_INTENT' : overlay.code,
+        reason: `Prompted intent is more restrictive than tool args. ${overlay.reason}`,
+      };
+    } else {
+      winner = moreRestrictive(primary, overlay);
+    }
   }
-  return moreRestrictive(primary, overlay);
+  if (winner.allowed) {
+    const swarmDenied = decideSwarmGate(
+      { ...input, swarm: input.swarm ? { ...input.swarm, register: undefined } : undefined },
+      prompted ? { ...args, ...asRecord(prompted) } : args,
+    );
+    if (swarmDenied) return swarmDenied;
+  }
+  return winner;
 }

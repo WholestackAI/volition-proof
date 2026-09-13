@@ -61,6 +61,20 @@ export function computeAttestationDigest(payload: AttestationEvidencePayload): s
 /**
  * Generate a cryptographically strong Ed25519 keypair for an external evaluator.
  */
+export interface TrustedEvaluatorRecord {
+  readonly evaluatorId: string;
+  readonly publicKeyPem: string;
+  readonly provenance: string;
+}
+
+export interface TrustedEvaluatorSet {
+  readonly evaluators: readonly TrustedEvaluatorRecord[];
+}
+
+export function trustedPublicKeys(set: TrustedEvaluatorSet): string[] {
+  return set.evaluators.map((evaluator) => evaluator.publicKeyPem);
+}
+
 export function generateEvaluatorKeyPair(evaluatorId: string): EvaluatorKeyPair {
   const { publicKey, privateKey } = generateKeyPairSync('ed25519', {
     publicKeyEncoding: { type: 'spki', format: 'pem' },

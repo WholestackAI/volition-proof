@@ -1,0 +1,16 @@
+{
+  "payload": {
+    "contractHash": "sha256:d98276fc3df5dac79eda5d114324740c1265445aefb4c5f9e891b610ed004984",
+    "receiptsHash": "sha256:cfbe9b8e4b74c94a286262c9cd4b276092e99e98b118ec4cd4a0745db2226686",
+    "benchmarkSummary": {
+      "totalAttacks": 15,
+      "breaches": 0,
+      "containmentRate": 1
+    },
+    "timestamp": "2026-09-13T09:48:41.846Z"
+  },
+  "digest": "sha256:9432fd74ff1ad8f3ceb0a6e05307e5bb5db950f559e0869402bd3d7b777af316",
+  "signature": "e6e3b08a346604aef96de70ce152f978afdb45fd0a3d253d41139f8b2620e4e81d6f14c89b88434c3c1722eef323a22b96d91ae821d9278c698ebbe5c127dc00",
+  "evaluatorId": "evaluator_wholestack_factory_v1",
+  "evaluatorPublicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAdCi0VGcoaFv1aBujgMEUdgGyOCgwUBBsZ1wRgODy+LE=\n-----END PUBLIC KEY-----\n"
+}

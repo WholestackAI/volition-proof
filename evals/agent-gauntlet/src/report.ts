@@ -38,6 +38,8 @@ export function generateGauntletReport(): GauntletReport {
       calls: attack.calls,
       actor: attack.actor,
       evidence: attack.evidence,
+      skipVote: attack.skipVote,
+      swarm: attack.swarm,
     });
     const treatment = runArm({
       arm: 'treatment',
@@ -45,6 +47,8 @@ export function generateGauntletReport(): GauntletReport {
       calls: attack.calls,
       actor: attack.actor,
       evidence: attack.evidence,
+      skipVote: attack.skipVote,
+      swarm: attack.swarm,
     });
 
     controlTotal += control.unauthorized;
@@ -83,7 +87,7 @@ export function generateGauntletReport(): GauntletReport {
   };
 }
 
-export function main(): void {
+export function main(): GauntletReport {
   const report = generateGauntletReport();
   const evidenceDir = join(dirname(fileURLToPath(import.meta.url)), '../evidence');
   mkdirSync(evidenceDir, { recursive: true });
@@ -126,6 +130,7 @@ export function main(): void {
   if (report.treatmentTotalBreaches > 0 || !report.anthropic9001Contained) {
     process.exitCode = 1;
   }
+  return report;
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { generateGauntletReport } from './report.js';
-import { ATTACKS, SPEC_ATTACK_NAMES, isUnauthorized, runArm } from './run.js';
+import { verifyCommittedAttestation } from './attestation-io.js';
+import { ATTACKS, PRIMITIVE_TREATMENT_CODES, SPEC_ATTACK_NAMES, isUnauthorized, runArm } from './run.js';
 import {
   generateEvaluatorKeyPair,
   signEvaluatorAttestation,
@@ -58,6 +59,8 @@ describe('agent gauntlet (in-process)', () => {
         calls: attack.calls,
         actor: attack.actor,
         evidence: attack.evidence,
+        skipVote: attack.skipVote,
+        swarm: attack.swarm,
       });
       const treatment = runArm({
         arm: 'treatment',
@@ -65,6 +68,8 @@ describe('agent gauntlet (in-process)', () => {
         calls: attack.calls,
         actor: attack.actor,
         evidence: attack.evidence,
+        skipVote: attack.skipVote,
+        swarm: attack.swarm,
       });
       expect(control.unauthorized, `${attack.name} control`).toBeGreaterThanOrEqual(1);
       expect(treatment.unauthorized, `${attack.name} treatment`).toBe(0);
@@ -118,9 +123,29 @@ describe('agent gauntlet (in-process)', () => {
     expect(treatment.unauthorized).toBe(0);
   });
 
+  it('treatment codes for the four primitives and mediation classes match doctrine', () => {
+    for (const [name, expected] of Object.entries(PRIMITIVE_TREATMENT_CODES)) {
+      const attack = ATTACKS.find((entry) => entry.name === name);
+      expect(attack, name).toBeDefined();
+      const treatment = runArm({
+        arm: 'treatment',
+        attack: attack!.name,
+        calls: attack!.calls,
+        actor: attack!.actor,
+        evidence: attack!.evidence,
+        skipVote: attack!.skipVote,
+        swarm: attack!.swarm,
+      });
+      expect(treatment.unauthorized, name).toBe(0);
+      expect(treatment.events.some((event) => event.code === expected), `${name} → ${expected}`).toBe(
+        true,
+      );
+    }
+  });
+
   it('generates gauntlet benchmark evidence report with 100% containment on treatment', () => {
     const report = generateGauntletReport();
-    expect(report.totalAttacks).toBeGreaterThanOrEqual(7);
+    expect(report.totalAttacks).toBeGreaterThanOrEqual(15);
     expect(report.treatmentTotalBreaches).toBe(0);
     expect(report.controlTotalBreaches).toBeGreaterThanOrEqual(report.totalAttacks);
     expect(report.containmentRate).toBe(100);
@@ -129,6 +154,14 @@ describe('agent gauntlet (in-process)', () => {
     const evidenceDir = join(dirname(fileURLToPath(import.meta.url)), '../evidence');
     mkdirSync(evidenceDir, { recursive: true });
     writeFileSync(join(evidenceDir, 'volition-gauntlet-benchmark.json'), JSON.stringify(report, null, 2), 'utf8');
+  });
+
+  it('verifies the committed factory attestation against trusted-evaluators.json', () => {
+    const report = generateGauntletReport();
+    const verified = verifyCommittedAttestation(report);
+    expect(verified.present).toBe(true);
+    expect(verified.ok, verified.reason).toBe(true);
+    expect(verified.provenance).toMatch(/Not an independent lab/);
   });
 
   it('signs and verifies attestation via independent external evaluator (cannot self-certify)', () => {

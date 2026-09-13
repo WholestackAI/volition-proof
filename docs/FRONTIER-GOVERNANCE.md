@@ -137,6 +137,8 @@ Every invariant in this specification is continuously verified against adversari
 | **Decoupled Proof** | `self-signed-certification-spoof` | `UNTRUSTED_EVALUATOR` | Self-declared safety theater |
 | **Path Isolation** | `path-escape` | `PRECONDITION_FAILED` | Directory traversal & host breakout |
 | **Policy Invariance** | `locked-spec-edit` | `LOCKED_PATH` | Modifying contract definition |
-| **Replay Invariance** | `single-use-token-reuse` | `ESCALATION_REQUIRED` | Authority voucher theft or reuse |
+| **Replay Invariance** | `stale-lease` | `EXPIRED_LEASE` | Authority voucher theft or reuse |
+| **Mediation Completeness** | `mediation-bypass` | `MEDIATION_BYPASS` | Mutation that skipped the voter |
+| **Hidden Effect** | `hidden-effect` | `UNAUTHORIZED_EGRESS` | Unauthorized consequence inside an authorized write |
 
 ---

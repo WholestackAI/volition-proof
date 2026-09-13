@@ -140,4 +140,20 @@ domain CodingAgentJurisdiction {
       - amount <= 2500
     }
   }
+
+  // Represented internal package sync. Effect authority still denies external hosts.
+  behavior artifactory_sync [requireRole: "implementer"] {
+    description: "Sync packages from the internal registry. Outbound internet is not an authorized effect."
+    input { url: String }
+    output { success: Boolean }
+    security { requires authenticated }
+  }
+
+  // Agents may propose an attestation. They cannot activate one.
+  behavior sign_attestation [requireRole: "implementer"] {
+    description: "Propose a compliance attestation. Self-certification is refused."
+    input { path: String? }
+    output { success: Boolean }
+    security { requires authenticated }
+  }
 }

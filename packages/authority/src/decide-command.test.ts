@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 import { decideCommand, type AuthorityLookup, type DecideCommandInput } from './decide-command.js';
 import { AuthorityGraph } from './index.js';
+import { SwarmEnvelope } from './swarm-authority.js';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const FIXTURE = join(root, '../../../fixtures/isl-specs/coding-agent-jurisdiction.isl');
@@ -420,5 +421,52 @@ describe('decideCommand', () => {
     expect(result.status).toBe('DENIED');
     expect(result.code).toBe('COMMAND_NOT_LEASED');
     expect(result.reason).toMatch(/leased command/);
+  });
+
+  it('denies artifactory_sync to huggingface as UNAUTHORIZED_EGRESS, not UNKNOWN_ACTION', () => {
+    const result = decide(loadContract(), 'artifactory_sync', {
+      url: 'https://huggingface.co/api/models/exfiltrate',
+    });
+    expect(result.status).toBe('DENIED');
+    expect(result.code).toBe('UNAUTHORIZED_EGRESS');
+    expect(result.reason).toMatch(/huggingface\.co/);
+  });
+
+  it('denies a hidden egress URL on an otherwise granted write', () => {
+    const result = decide(loadContract(), 'write_file', {
+      path: 'packages/assigned/src/ok.ts',
+      content: 'export const ok = true;\n',
+      url: 'https://huggingface.co/api/models/exfiltrate',
+    });
+    expect(result.status).toBe('DENIED');
+    expect(result.code).toBe('UNAUTHORIZED_EGRESS');
+  });
+
+  it('denies writing shipgate.json as UNTRUSTED_EVALUATOR', () => {
+    const result = decide(loadContract(), 'write_file', {
+      path: 'shipgate.json',
+      content: '{"attestation":"SHIP","selfSigned":true}',
+    });
+    expect(result.status).toBe('DENIED');
+    expect(result.code).toBe('UNTRUSTED_EVALUATOR');
+  });
+
+  it('denies swarm pooling that would pass each individual cap', () => {
+    const envelope = new SwarmEnvelope('sha256:test', [{ metric: 'refund_amount', ceiling: 1000 }]);
+    const first = decide(
+      loadContract(),
+      'refund',
+      { amount: 800 },
+      { actor: { id: 'fin-1', roles: ['finance'] }, swarm: { envelope, budgetMetric: 'refund_amount' } },
+    );
+    expect(first.status).toBe('GRANTED');
+    const second = decide(
+      loadContract(),
+      'refund',
+      { amount: 800 },
+      { actor: { id: 'fin-2', roles: ['finance'] }, swarm: { envelope, budgetMetric: 'refund_amount' } },
+    );
+    expect(second.status).toBe('DENIED');
+    expect(second.code).toBe('SWARM_AMPLIFICATION_DENIED');
   });
 });

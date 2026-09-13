@@ -85,6 +85,17 @@ describe('Effect Authority (Consequence Governance)', () => {
     expect(decision.code).toBe('EFFECT_PROHIBITED');
   });
 
+  it('denies self-certification of shipgate.json as UNTRUSTED_EVALUATOR', () => {
+    const effects = inferEffectsFromAction('write_file', {
+      path: 'shipgate.json',
+      content: '{"attestation":"SHIP"}',
+    });
+    expect(effects.some((e) => e.kind === 'self_certification')).toBe(true);
+    const decision = evaluateEffectPolicies(effects);
+    expect(decision.allowed).toBe(false);
+    expect(decision.code).toBe('UNTRUSTED_EVALUATOR');
+  });
+
   it('escalates production push unless operator voucher is present', () => {
     const effects = inferEffectsFromAction('git_push', {
       ref: 'refs/heads/main',

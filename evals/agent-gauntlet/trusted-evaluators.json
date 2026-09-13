@@ -1,0 +1,9 @@
+{
+  "evaluators": [
+    {
+      "evaluatorId": "evaluator_wholestack_factory_v1",
+      "provenance": "First-party factory operator key. Not an independent lab. Strangers replace this with their own public key and re-sign.",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAdCi0VGcoaFv1aBujgMEUdgGyOCgwUBBsZ1wRgODy+LE=\n-----END PUBLIC KEY-----\n"
+    }
+  ]
+}

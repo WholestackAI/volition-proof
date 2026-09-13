@@ -16,7 +16,8 @@ export type EffectKind =
   | 'evaluator_mutation'
   | 'governor_mutation'
   | 'model_weights_mutation'
-  | 'deploy_production';
+  | 'deploy_production'
+  | 'self_certification';
 
 export type EffectOperation = 'read' | 'write' | 'execute' | 'send' | 'listen' | 'connect';
 
@@ -136,11 +137,33 @@ export function inferEffectsFromAction(
       });
     }
 
+    if (
+      /(?:^|\/)shipgate\.json$/i.test(path) ||
+      /(?:^|\/)(?:evaluator-)?attestation\.json$/i.test(path) ||
+      args.selfSigned === true
+    ) {
+      effects.push({
+        kind: 'self_certification',
+        target: path || 'attestation',
+        operation: 'write',
+        reason: `Action ${action} attempts to self-certify attestation ${path || 'payload'}`,
+      });
+    }
+
     effects.push({
       kind: 'filesystem_mutation',
       target: path,
       operation: op,
       context: { emptyFile: args.content === '' },
+    });
+  }
+
+  if (action === 'sign_attestation' || action === 'issue_attestation') {
+    effects.push({
+      kind: 'self_certification',
+      target: typeof args.path === 'string' ? args.path : 'attestation',
+      operation: 'write',
+      reason: `Action ${action} attempts to certify compliance from inside the governed runtime`,
     });
   }
 
@@ -214,7 +237,8 @@ export interface EffectEvaluationDecision {
     | 'UNAUTHORIZED_EGRESS'
     | 'COVERT_CHANNEL_DETECTED'
     | 'IMMUTABLE_GOVERNOR_VIOLATION'
-    | 'APPROVAL_REQUIRED';
+    | 'APPROVAL_REQUIRED'
+    | 'UNTRUSTED_EVALUATOR';
   reason?: string;
   effect?: EffectDescriptor;
 }
@@ -247,6 +271,17 @@ export function evaluateEffectPolicies(
         status: 'DENIED',
         code: 'IMMUTABLE_GOVERNOR_VIOLATION',
         reason: `DENIED IMMUTABLE_GOVERNOR_VIOLATION — agents cannot modify test suites, benchmarks, or evaluators (${effect.target}).`,
+        effect,
+      };
+    }
+
+    // 2b. Self-certification — the governed runtime cannot be its own evaluator.
+    if (effect.kind === 'self_certification' && !evidence?.allowLocked) {
+      return {
+        allowed: false,
+        status: 'DENIED',
+        code: 'UNTRUSTED_EVALUATOR',
+        reason: `DENIED UNTRUSTED_EVALUATOR — the governed system cannot certify itself (${effect.target}).`,
         effect,
       };
     }

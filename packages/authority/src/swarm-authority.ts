@@ -100,4 +100,10 @@ export class SwarmEnvelope {
   getConsumed(metric: string): number {
     return this.consumed.get(metric) ?? 0;
   }
+
+  wouldExceed(metric: string, requested: number): boolean {
+    const ceiling = this.ceilings.get(metric);
+    if (ceiling === undefined) return false;
+    return (this.consumed.get(metric) ?? 0) + requested > ceiling;
+  }
 }

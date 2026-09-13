@@ -11,7 +11,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "gauntlet": "tsx scripts/gauntlet.ts"
+    "gauntlet": "tsx scripts/gauntlet.ts",
+    "replicate": "tsx scripts/gauntlet.ts"
   },
   "repository": {
     "type": "git",

@@ -20,6 +20,7 @@ export {
   type DecideCommandEvidence,
   type DecideCommandInput,
   type DecideCommandSession,
+  type DecideCommandSwarm,
 } from './decide-command.js';
 export {
   capabilityLeaseHash,
