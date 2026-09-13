@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "@isl-lang/parser": ["./packages/isl/parser/src/index.ts"],
+      "@wholestack/app-contract": ["./packages/app-contract/src/index.ts"],
+      "@wholestack/authority": ["./packages/authority/src/index.ts"],
+      "@wholestack/authority-mcp": ["./packages/authority-mcp/src/index.ts"],
+      "@wholestack/contracts": ["./packages/contracts/src/index.ts"]
+    }
+  },
+  "include": [
+    "packages/**/*.ts",
+    "evals/**/*.ts",
+    "scripts/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}

@@ -1,0 +1,30 @@
+{
+  "name": "volition-proof",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Public Volition authority kernel and 12-attack gauntlet. Factory stays private.",
+  "license": "MIT",
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "gauntlet": "tsx scripts/gauntlet.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WholestackAI/volition-proof.git"
+  },
+  "homepage": "https://wholestack.ai/research/deterministic-authority",
+  "dependencies": {
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "tsx": "^4.23.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.7"
+  }
+}

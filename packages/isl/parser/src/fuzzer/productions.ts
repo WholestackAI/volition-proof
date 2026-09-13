@@ -1,0 +1,181 @@
+/**
+ * Grammar / AST production catalog.
+ *
+ * Ground truth is `ast.ts` node `kind`s plus the Peggy rule names in
+ * `src/grammar/isl.peggy`. The generator fires these ids so a batch can
+ * prove it exercised constructs hand-written templates skip.
+ *
+ * Peggy is the documented grammar; the recursive-descent parser is the
+ * runtime parser (and is ahead on aggregate/roles/ledger). The catalog
+ * unions both. Tests assert every listed Peggy rule still exists in the
+ * grammar file, and that a large seeded batch hits the rare-nesting ids.
+ */
+
+/** Peggy rules the generator is responsible for exercising (not lexer/ws). */
+export const PEGGY_GENERATIVE_RULES = [
+  'Program',
+  'Domain',
+  'DomainMember',
+  'VersionField',
+  'OwnerField',
+  'TypeDeclaration',
+  'EnumDeclaration',
+  'EnumVariant',
+  'TypeDefinition',
+  'UnionTypeDef',
+  'SingleTypeDef',
+  'BaseTypeDef',
+  'PrimitiveTypeName',
+  'ConstraintBlock',
+  'ConstraintItem',
+  'EntityDecl',
+  'EntityMember',
+  'FieldDecl',
+  'AnnotationList',
+  'AnnotationItem',
+  'InvariantsSection',
+  'LifecycleSection',
+  'Transition',
+  'BehaviorDecl',
+  'BehaviorSection',
+  'ActorsSection',
+  'InputSection',
+  'OutputSection',
+  'ErrorDecl',
+  'PreconditionsSection',
+  'PostconditionsSection',
+  'PostconditionEntry',
+  'InvariantBlock',
+  'PolicyDecl',
+  'PolicyTarget',
+  'PolicyRule',
+  'ViewDecl',
+  'ViewFieldItem',
+  'ScenarioBlock',
+  'ScenarioItem',
+  'GivenBlock',
+  'WhenBlock',
+  'ThenBlock',
+  'Statement',
+  'ChaosBlock',
+  'Expression',
+  'OrExpr',
+  'AndExpr',
+  'ImpliesExpr',
+  'EqualityExpr',
+  'ComparisonExpr',
+  'AdditiveExpr',
+  'MultiplicativeExpr',
+  'UnaryExpr',
+  'PostfixExpr',
+  'PrimaryExpr',
+  'QuantifierName',
+  'LambdaExpr',
+  'StringLit',
+  'NumberLit',
+  'BoolLit',
+  'NullLit',
+] as const;
+
+export type PeggyGenerativeRule = (typeof PEGGY_GENERATIVE_RULES)[number];
+
+/**
+ * AST `kind` values the generator can emit. Kept in sync with `ast.ts`.
+ * Full-stack / import constructs are listed as optional — generator may skip
+ * them (they need files or product-specific lowering) but the catalog still
+ * names them so coverage reports stay honest.
+ */
+export const AST_KINDS = [
+  'Domain',
+  'TypeDeclaration',
+  'PrimitiveType',
+  'ConstrainedType',
+  'Constraint',
+  'EnumType',
+  'EnumVariant',
+  'StructType',
+  'UnionType',
+  'UnionVariant',
+  'ListType',
+  'MapType',
+  'OptionalType',
+  'ReferenceType',
+  'Field',
+  'Annotation',
+  'Entity',
+  'LifecycleSpec',
+  'LifecycleTransition',
+  'RolesDecl',
+  'RoleDecl',
+  'PermissionsBlock',
+  'PermissionRule',
+  'RoleExpr',
+  'Behavior',
+  'ActorSpec',
+  'InputSpec',
+  'OutputSpec',
+  'ErrorSpec',
+  'PostconditionBlock',
+  'InvariantBlock',
+  'Policy',
+  'PolicyTarget',
+  'PolicyRule',
+  'View',
+  'ViewField',
+  'ConsistencySpec',
+  'Aggregate',
+  'AggregateMeasure',
+  'QueryDecl',
+  'JobDecl',
+  'NotificationDecl',
+  'LedgerDecl',
+  'LedgerMovement',
+  'ScenarioBlock',
+  'Scenario',
+  'ChaosBlock',
+  'ChaosScenario',
+  'AssignmentStmt',
+  'CallStmt',
+  'Identifier',
+  'QualifiedName',
+  'StringLiteral',
+  'NumberLiteral',
+  'BooleanLiteral',
+  'NullLiteral',
+  'BinaryExpr',
+  'UnaryExpr',
+  'CallExpr',
+  'MemberExpr',
+  'IndexExpr',
+  'QuantifierExpr',
+  'ConditionalExpr',
+  'OldExpr',
+  'ResultExpr',
+  'InputExpr',
+  'LambdaExpr',
+  'ListExpr',
+] as const;
+
+export type AstKind = (typeof AST_KINDS)[number];
+
+/** Feature tags for rare combinations templates almost never write. */
+export const RARE_FEATURES = [
+  'nested-list-map',
+  'nested-struct',
+  'nested-optional-list',
+  'union-struct-arms',
+  'union-scalars',
+  'quantifier-precondition',
+  'conditional-expr',
+  'index-expr',
+  'member-chain',
+  'lifecycle-plus-status-enum',
+  'roles-permissions-policy',
+  'view-plus-aggregate',
+  'ledger-plus-entity',
+  'deep-binary-bool',
+  'list-entity-success',
+  'cross-entity-references',
+] as const;
+
+export type RareFeature = (typeof RARE_FEATURES)[number];
